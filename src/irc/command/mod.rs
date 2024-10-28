@@ -1,0 +1,15 @@
+mod cap;
+mod join;
+mod list;
+mod mode;
+mod motd;
+mod names;
+mod nick;
+mod other;
+mod part;
+mod pass;
+mod ping;
+mod privmsg;
+mod quit;
+mod topic;
+mod who;

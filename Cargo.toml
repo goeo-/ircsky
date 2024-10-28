@@ -1,0 +1,49 @@
+[package]
+name = "ircsky"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "ircsky"
+
+[dependencies]
+anyhow = "1.0.90"
+dashmap = "6.1.0"
+reqwest = { version = "0.12.8", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "http2",
+] }
+irc-rust = "0.4.0"
+config = "0.14.0"
+
+tokio = { version = "1", features = ["full"] }
+futures = "0.3.31"
+futures-core = "0.3.30"
+tokio-stream = { version = "0.1.16", features = ["sync"] }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-aux = "4.5.0"
+
+# websocket support
+bytes = "1.8.0"
+http-body-util = "0.1.2"
+fastwebsockets = { version = "0.8.0", features = ["upgrade"] }
+hyper = "1.5.0"
+hyper-util = { version = "0.1.9", features = ["tokio"] }
+
+# tls
+tokio-rustls = { version = "0.26.0", default-features = false }
+webpki-roots = "0.26.6"
+rustls-rustcrypto = "0.0.2-alpha"
+rustls-pki-types = "1.10.0"
+rustls-pemfile = "2.2.0"
+
+# atproto
+atrium-api = { version = "0.24.6", features = ["agent"] }
+atrium-xrpc-client = "0.5.8"
