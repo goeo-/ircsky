@@ -4,6 +4,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 
 use atrium_api::agent::{store::MemorySessionStore, AtpAgent};
 use atrium_xrpc_client::reqwest::ReqwestClient;
+use tokio_stream::wrappers::BroadcastStream;
 
 use crate::atproto;
 use crate::irc::{IrcClient, UserState};
@@ -49,7 +50,18 @@ where
                     anyhow::bail!("DID mismatch");
                 }
 
-                self.user = UserState::LoggedIn(nick.to_string(), did, agent);
+                let (tx, rx) = tokio::sync::broadcast::channel(16);
+
+                self.channels
+                    .push(("dm".to_string(), BroadcastStream::new(rx)));
+                self.user = UserState::LoggedIn(nick.to_string(), did.clone(), agent);
+
+                self.ircsky.get_user(&did).await?;
+                self.ircsky.users.alter(&did, |_, mut user| {
+                    user.sender = Some(tx);
+                    user
+                });
+
                 self.register_user().await
             }
             _ => {

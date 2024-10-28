@@ -6,6 +6,7 @@ use irc_rust::{parsed::Parsed, Message};
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use crate::{
+    atproto,
     irc::{IrcClient, UserState},
     ircsky, psky,
 };
@@ -17,12 +18,39 @@ where
     pub async fn handle_privmsg(&mut self, message: Parsed<'_>) -> Result<()> {
         let nick = self.user.get_nick()?.to_owned();
 
-        let channel_name = ircsky::ChannelName(
-            message
-                .param(0)
-                .ok_or(anyhow::anyhow!("No channel given with PRIVMSG"))?
-                .to_owned(),
-        );
+        let recipient = message
+            .param(0)
+            .ok_or(anyhow::anyhow!("No recipient given with PRIVMSG"))?
+            .to_owned();
+
+        if !recipient.starts_with("#") {
+            let did = atproto::resolve_handle(recipient.as_str()).await?; // TODO: cache !!!
+            let (user_, _) = self.ircsky.get_user(&did).await?;
+            let user = user_.as_ref();
+
+            let (sender_, _) = self
+                .ircsky
+                .get_user(&self.user.did().ok_or(anyhow::anyhow!("no self did"))?)
+                .await?;
+            let sender = sender_.as_ref();
+
+            user.sender
+                .as_ref()
+                .ok_or(anyhow::anyhow!("User has no sender"))?
+                .send(psky::PskyEvent::PrivateMessage(
+                    sender.clone(),
+                    psky::Message {
+                        r#type: "social.psky.chat.message".to_string(),
+                        content: message.trailing().ok_or(anyhow::anyhow!(""))?.to_string(),
+                        room: ircsky::ChannelUri(recipient.clone()),
+                    },
+                    ircsky::ChannelName(recipient.clone()),
+                ))?;
+
+            return Ok(());
+        }
+
+        let channel_name = ircsky::ChannelName(recipient);
 
         let msg_line = message
             .params()

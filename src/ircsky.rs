@@ -174,6 +174,7 @@ impl Ircsky {
             did: did.to_string(),
             profile,
             handle: claimed_handle,
+            sender: None,
         };
         self.users.insert(did.to_string(), ret);
         Ok((
@@ -196,4 +197,5 @@ pub struct User {
     pub did: String,
     pub profile: Option<psky::Profile>,
     pub handle: Option<String>,
+    pub sender: Option<tokio::sync::broadcast::Sender<psky::PskyEvent>>,
 }
