@@ -209,18 +209,20 @@ where
                     }
                 }
 
-                self.send(
-                    Message::builder("PRIVMSG")
-                        .prefix(
-                            user.handle.as_ref().ok_or(std::fmt::Error)?,
-                            Some(&user.did),
-                            Some("the.atmosphere"),
-                        )
-                        .param(&room)
-                        .trailing(message.content.as_str())
-                        .build(),
-                )
-                .await?;
+                for line in message.content.split(&['\r', '\n']) {
+                    self.send(
+                        Message::builder("PRIVMSG")
+                            .prefix(
+                                user.handle.as_ref().ok_or(std::fmt::Error)?,
+                                Some(&user.did),
+                                Some("the.atmosphere"),
+                            )
+                            .param(&room)
+                            .trailing(line)
+                            .build(),
+                    )
+                    .await?;
+                }
             }
             PskyEvent::Join(user, room) => {
                 if let Some(did) = self.user.did() {
