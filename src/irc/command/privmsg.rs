@@ -95,6 +95,8 @@ where
                             Some(sender.did.clone()),
                             Some("the.atosphere"),
                         )
+                        .command(&recipient)
+                        .trailing(&msg_line)
                         .build(),
                 )
                 .await;
