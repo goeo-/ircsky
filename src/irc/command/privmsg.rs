@@ -23,35 +23,6 @@ where
             .ok_or(anyhow::anyhow!("No recipient given with PRIVMSG"))?
             .to_owned();
 
-        if !recipient.starts_with("#") {
-            let did = atproto::resolve_handle(recipient.as_str()).await?; // TODO: cache !!!
-            let (user_, _) = self.ircsky.get_user(&did).await?;
-            let user = user_.as_ref();
-
-            let (sender_, _) = self
-                .ircsky
-                .get_user(&self.user.did().ok_or(anyhow::anyhow!("no self did"))?)
-                .await?;
-            let sender = sender_.as_ref();
-
-            user.sender
-                .as_ref()
-                .ok_or(anyhow::anyhow!("User has no sender"))?
-                .send(psky::PskyEvent::PrivateMessage(
-                    sender.clone(),
-                    psky::Message {
-                        r#type: "social.psky.chat.message".to_string(),
-                        content: message.trailing().ok_or(anyhow::anyhow!(""))?.to_string(),
-                        room: ircsky::ChannelUri(recipient.clone()),
-                    },
-                    ircsky::ChannelName(recipient.clone()),
-                ))?;
-
-            return Ok(());
-        }
-
-        let channel_name = ircsky::ChannelName(recipient);
-
         let msg_line = message
             .params()
             .skip(1)
@@ -87,6 +58,49 @@ where
                 )
                 .await;
         }
+
+        if !recipient.starts_with("#") {
+            let did = atproto::resolve_handle(recipient.as_str()).await?; // TODO: cache !!!
+            let (user_, _) = self.ircsky.get_user(&did).await?;
+            let user = user_.as_ref();
+
+            let (sender_, _) = self
+                .ircsky
+                .get_user(&self.user.did().ok_or(anyhow::anyhow!("no self did"))?)
+                .await?;
+            let sender = sender_.as_ref().clone();
+            drop(sender_);
+
+            user.sender
+                .as_ref()
+                .ok_or(anyhow::anyhow!("User has no sender"))?
+                .send(psky::PskyEvent::PrivateMessage(
+                    sender.clone(),
+                    psky::Message {
+                        r#type: "social.psky.chat.message".to_string(),
+                        content: msg_line.to_string(),
+                        room: ircsky::ChannelUri(recipient.clone()),
+                    },
+                    ircsky::ChannelName(recipient.clone()),
+                ))?;
+            drop(user_);
+
+            return self
+                .send(
+                    Message::builder("PRIVMSG")
+                        .prefix(
+                            sender
+                                .handle
+                                .ok_or(anyhow::anyhow!("no self handle in pm"))?,
+                            Some(sender.did.clone()),
+                            Some("the.atosphere"),
+                        )
+                        .build(),
+                )
+                .await;
+        }
+
+        let channel_name = ircsky::ChannelName(recipient);
 
         let resolved = match self.ircsky.resolve_channel(&channel_name).await {
             Some(resolved) => resolved,
