@@ -26,7 +26,7 @@ where
                 .iter()
                 .any(|(name, _)| name == channel_name.0.as_str())
             {
-                return Ok(()); // Already in channel
+                continue; // Already in channel
             }
 
             let channel_uri = match self.ircsky.resolve_channel(&channel_name).await {
