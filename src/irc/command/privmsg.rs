@@ -85,8 +85,8 @@ where
                 ))?;
             drop(user_);
 
-            return self
-                .send(
+            if self.cap.has_capability("echo-message") {
+                self.send(
                     Message::builder("PRIVMSG")
                         .prefix(
                             sender
@@ -99,7 +99,10 @@ where
                         .trailing(&msg_line)
                         .build(),
                 )
-                .await;
+                .await?;
+            }
+
+            return Ok(());
         }
 
         let channel_name = ircsky::ChannelName(recipient);
