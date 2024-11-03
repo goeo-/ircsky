@@ -27,7 +27,7 @@ pub struct Identity {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Commit {
     rev: Option<String>,
-    r#type: String,
+    operation: String,
     pub collection: Option<String>,
     rkey: Option<String>,
     pub record: Option<serde_json::Value>,
@@ -38,7 +38,7 @@ pub struct Commit {
 pub struct Event {
     pub did: String,
     pub time_us: u64,
-    pub r#type: String,
+    pub kind: String,
     pub commit: Option<Commit>,
     account: Option<Account>,
     pub identity: Option<Identity>,
@@ -103,7 +103,7 @@ wantedCollections=social.psky.actor.profile&wantedCollections=social.psky.chat.r
     async fn handle_event(&self, event: Event) -> u64 {
         let ret = event.time_us;
 
-        if event.r#type == "id" {
+        if event.kind == "identity" {
             let handle = event.identity.as_ref().and_then(|i| i.handle.clone());
 
             // TODO: send to user's channels
@@ -112,7 +112,7 @@ wantedCollections=social.psky.actor.profile&wantedCollections=social.psky.chat.r
                 .alter(&event.did, |_, old| ircsky::User { handle, ..old });
         }
 
-        if event.r#type != "com" {
+        if event.kind != "commit" {
             return ret;
         }
 
